@@ -1,4 +1,5 @@
 const fetchBooks = require("../utils/helperFunctions").fetchBooks;
+const books = require("../booksdb");
 
 // Get all books at once
 const getBooks = async (req, res) => {

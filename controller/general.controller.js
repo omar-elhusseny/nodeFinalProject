@@ -24,13 +24,10 @@ const getBookById = async function (req, res) {
 const getBookByAuthor = async function (req, res) {
     let { author } = req.params;
     const booksFromAPI = await fetchBooks(); // Fetch books asynchronously
-    let choosenBook;
-    Object.values(booksFromAPI).filter(book => {
-        if (book.author.includes(author)) {
-            choosenBook = book;
-        }
-    });
-    return res.status(201).json(choosenBook);
+    const chosenBooks = Object.values(booksFromAPI).filter(book => 
+        book.author && book.author.includes(author)
+    );
+    return res.status(201).json(chosenBooks);
 }
 
 // Get only book by it's title
@@ -38,7 +35,7 @@ const getBookByTitle = async function (req, res) {
     let title = req.params.title.toLowerCase();
     const booksFromAPI = await fetchBooks(); // Fetch books asynchronously
     const matchedBooks = Object.values(booksFromAPI).filter(book =>
-        book.title.toLowerCase().includes(title)
+        book.title && book.title.toLowerCase().includes(title)
     );
     if (matchedBooks.length === 0) {
         return res.status(404).json({ message: `No books found matching the title: "${req.params.title}"` });
@@ -48,15 +45,17 @@ const getBookByTitle = async function (req, res) {
 
 // Get book review by book id
 const getBookReview = function (req, res) {
-    let { isbn } = req.params;
-    let choosenBookReviews;
-    for (const [key, value] of Object.entries(books)) {
-        if (key === isbn) {
-            choosenBookReviews = value.reviews;
-        }
+    const { isbn } = req.params;
+    // Validate if the book exists in the object
+    const book = books[isbn];
+    if (!book) {
+        return res.status(404).json({ message: `No book found with ISBN: ${isbn}` });
     }
-    return res.status(201).json(choosenBookReviews);
-}
+    // Extract reviews or return an empty array if reviews are undefined
+    const chosenBookReviews = book.reviews || [];
+    return res.status(200).json(chosenBookReviews);
+};
+
 
 
 module.exports = { getBooks, getBookById, getBookByAuthor, getBookByTitle, getBookReview }

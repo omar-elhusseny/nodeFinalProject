@@ -5,22 +5,29 @@ const isValid = require("../utils/helperFunctions").isValid;
 const users = require("../utils/helperFunctions").users;
 const authenticatedUser = require("../utils/helperFunctions").authenticatedUser;
 
-const login = (req, res) => {
+const login = (req, res, next) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
-        return res.status(400).json({ message: "Username and password are required" });
+        const error = new Error("Username and password are required");
+        error.statusCode = 400;
+        return next(error);
     }
 
     if (authenticatedUser(username, password)) {
-        const accessToken = jwt.sign({ username: username }, 'accessBookStoreProject', { expiresIn: "1h" });
+        const accessToken = jwt.sign({ username: username }, process.env.JWT_SECRET_KEY, { expiresIn: "1h" });
 
-        req.session.authorization = { "accessToken": accessToken };
-        req.session.username = username;
-
-        return res.status(200).json({ message: "User successfully logged in" });
+        return res.status(200).json({
+            message: "User successfully logged in",
+            data: {
+                token: accessToken,
+                user: username
+            }
+        });
     } else {
-        return res.status(401).json({ message: "Invalid login. Check username and password" });
+        const error = new Error("Invalid login. Check username and password");
+        error.statusCode = 401;
+        return next(error);
     }
 }
 
@@ -49,21 +56,21 @@ const addBookReview = (req, res) => {
         return res.status(400).send("Review content is required.");
     }
 
-    if (books[isbn].reviews[req.session.username]) {
+    if (books[isbn].reviews[req.currentUser.username]) {
         // Modify the existing review if the user has already posted one
-        books[isbn].reviews[req.session.username] = review;
+        books[isbn].reviews[req.currentUser.username] = review;
         return res.status(200).send("Your review has been updated.");
 
     } else {
         // Add a new review if it's the user's first time reviewing this book
-        books[isbn].reviews[req.session.username] = review;
+        books[isbn].reviews[req.currentUser.username] = review;
         return res.status(201).send("Your review has been posted.");
     }
 }
 
 const deleteBookReview = (req, res) => {
     const { isbn } = req.params;
-    const { username } = req.session;
+    const { username } = req.currentUser;
 
     // Ensure the user is logged in
     if (!username) {

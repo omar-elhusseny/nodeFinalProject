@@ -12,19 +12,28 @@ const getBooks = async (req, res) => {
 }
 
 // Get only book by id
-const getBookById = async function (req, res) {
+// const getBookById = async function (req, res) {
+//     let { isbn } = req.params;
+//     const booksFromAPI = await fetchBooks(); // Fetch books asynchronously
+//     // let choosenBook = books[isbn];
+//     return res.status(201).json(booksFromAPI[isbn]);
+// }
+
+const getBookById = function (req, res) {
     let { isbn } = req.params;
-    const booksFromAPI = await fetchBooks(); // Fetch books asynchronously
-    // let choosenBook = books[isbn];
-    return res.status(201).json(booksFromAPI[isbn]);
-}
+    fetchBooks().then(booksFromAPI => {
+        res.status(201).json(booksFromAPI[isbn]);
+    }).catch(error => {
+        res.status(500).json({ error: 'Failed to fetch books', details: error.message });
+    });
+};
 
 
 // Get only book by author name
 const getBookByAuthor = async function (req, res) {
     let { author } = req.params;
     const booksFromAPI = await fetchBooks(); // Fetch books asynchronously
-    const chosenBooks = Object.values(booksFromAPI).filter(book => 
+    const chosenBooks = Object.values(booksFromAPI).filter(book =>
         book.author && book.author.includes(author)
     );
     return res.status(201).json(chosenBooks);
